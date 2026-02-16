@@ -26,6 +26,12 @@ The `ghcp` command:
 - Passes your GitHub authentication via `GH_TOKEN` environment variable
 - Forwards all arguments to the copilot command
 
+**Built-in Commands:**
+- `ghcp --ghcp-rebuild` - Rebuild container to update Copilot CLI to latest version
+- `ghcp --ghcp-help` - Show ghcp help (for copilot help, use `ghcp --help`)
+
+All flags not starting with `--ghcp-` are passed through to copilot.
+
 ## Installation
 
 1. Ensure you're authenticated with GitHub CLI on your host:
@@ -82,6 +88,24 @@ The `:Z` flag is important for SELinux systems to properly label the volume.
 - `:ro` - Read-only mount
 - `:rw` - Read-write mount (default)
 
+## Updating Copilot CLI
+
+### Recommended: Use Built-in Rebuild Command
+```bash
+ghcp --ghcp-rebuild
+```
+
+This removes the old container image and rebuilds it with the latest Copilot CLI from npm.
+
+### Alternative: Manual Rebuild
+```bash
+# Remove old image
+podman rmi copilot-sandbox
+
+# Next ghcp command will auto-rebuild
+ghcp --version
+```
+
 ## Troubleshooting
 
 ### SELinux Relabeling Errors
@@ -91,8 +115,4 @@ If you encounter "SELinux relabeling not allowed" errors, run from a subdirector
 The container uses your host's GitHub authentication via the `GH_TOKEN` environment variable. Ensure you're authenticated on your host with `gh auth login` before running the container.
 
 ### Rebuilding the Container
-To rebuild the container image (e.g., to update Copilot CLI):
-```bash
-podman rmi copilot-sandbox
-ghcp copilot  # Will auto-rebuild on next run
-```
+See "Updating Copilot CLI" section above for instructions on updating to the latest version.
