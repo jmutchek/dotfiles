@@ -1,0 +1,63 @@
+# Sensitive Files - DO NOT COMMIT
+# SSH Keys
+.ssh/id_*
+.ssh/*.pem
+.ssh/*.key
+.ssh/known_hosts
+.ssh/authorized_keys
+
+# GPG Keys
+.gnupg/
+*.gpg
+*.asc
+
+# Authentication & Tokens
+.netrc
+.authinfo
+*_token
+*_secret
+*.credentials
+.aws/credentials
+.azure/
+
+# Git credentials
+.git-credentials
+.gitconfig.local
+
+# Environment files with secrets
+.env
+.env.*
+!.env.example
+
+# OneDrive auth tokens (if present)
+.config/onedrive/refresh_token
+.config/onedrive/*.db
+.config/onedrive/*.log
+
+# History files (may contain sensitive commands)
+.*_history
+.bash_history
+.zsh_history
+.python_history
+
+# Cache and temporary files
+.cache/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Application specific
+.vscode/settings.json
+.config/gh/hosts.yml
+
+# Container runtime data
+.local/containers/*/auth.json
+.local/containers/*/secrets/
+
+# NPM & Node
+.npmrc
+.yarnrc
+
+# Docker credentials
+.docker/config.json

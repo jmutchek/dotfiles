@@ -1,0 +1,40 @@
+# ======================================================================
+# Example sync_list
+# ======================================================================
+# IMPORTANT:
+# - 'sync_list' EXCLUDES EVERYTHING by default.
+# - Exclusions come first.
+# - Inclusions follow.
+#
+# Matching behaviour:
+# - Rules WITHOUT a slash (e.g., "Backup", "notes.txt") match ANYWHERE.
+#   ⚠️ These rules force exhaustive scanning of ALL online and local folders.
+#   ⚠️ They are computationally expensive.
+#
+# - Rules with a leading "/" apply ONLY to the OneDrive ROOT.
+#
+# - Rules with a trailing "/" match DIRECTORIES only.
+#
+# Wildcards and globbing:
+# - "*"   matches any characters within a single path segment.
+# - "**"  matches directories RECURSIVELY across ANY depth.
+# ======================================================================
+
+# ----------------------------------------------------------------------
+# EXCLUSIONS (ALWAYS PUT THESE FIRST)
+# ----------------------------------------------------------------------
+
+# Exclude temporary folders inside ANY Documents folder (any level)
+# !Documents/temp*
+
+# Exclude Secret_data ONLY in OneDrive root
+# !/Secret_data/*
+
+# ----------------------------------------------------------------------
+# INCLUSIONS (WHAT YOU *DO* WANT TO SYNC)
+# ----------------------------------------------------------------------
+
+/10-self/12-journal/12.10-journal
+/50-hobbies
+
+
