@@ -2,63 +2,72 @@
 
 This container provides a sandboxed environment for running GitHub Copilot CLI with restricted access to your host system.
 
-## Building the Container
+## Quick Start
+
+The easiest way to use this container is via the `ghcp` shell function (installed via dotfiles):
 
 ```bash
+# From any directory - automatically mounts current directory
+ghcp
+
+# Check version
+ghcp --version
+
+# Ask Copilot a question
+ghcp suggest "how to list files recursively"
+
+# Explain a command
+ghcp explain "tar -xzvf file.tar.gz"
+```
+
+The `ghcp` command:
+- Auto-builds the container image on first use
+- Mounts your current directory to `/workspace` in the container
+- Passes your GitHub authentication via `GH_TOKEN` environment variable
+- Forwards all arguments to the copilot command
+
+## Installation
+
+1. Ensure you're authenticated with GitHub CLI on your host:
+   ```bash
+   gh auth login
+   ```
+
+2. Deploy dotfiles with GNU Stow:
+   ```bash
+   cd ~/github/dotfiles
+   stow -t ~ local bash
+   ```
+
+3. Reload your shell:
+   ```bash
+   exec bash
+   ```
+
+## Manual Container Usage
+
+If you want to build and run the container manually:
+
+```bash
+# Build the image
 podman build -t copilot-sandbox -f Containerfile .
-```
 
-## Running the Container
-
-### Using the Helper Script (Recommended)
-The easiest way to run the container with authentication:
-
-```bash
-./run.sh /path/to/your/project
-```
-
-This automatically:
-- Mounts your project directory to `/workspace`
-- Passes your GitHub authentication token to the container
-
-### Manual Usage
-Mount a folder from your host into the container's `/workspace` directory:
-
-```bash
+# Run with current directory mounted
 podman run -it --rm \
-  -v /path/to/your/project:/workspace:Z \
+  -v "$PWD:/workspace:Z" \
   -e GH_TOKEN="$(gh auth token)" \
   copilot-sandbox
 ```
 
 The `:Z` flag is important for SELinux systems to properly label the volume.
 
-## First-Time Setup
+## Container Details
 
-1. Ensure you're authenticated with GitHub CLI on your host:
-   ```bash
-   gh auth login
-   ```
-2. Build the container:
-   ```bash
-   podman build -t copilot-sandbox -f Containerfile .
-   ```
-3. Run the container using the helper script or manual command above
+**Base Image:** node:20-bookworm-slim  
+**Installed:** git, @github/copilot CLI  
+**Default Working Directory:** `/workspace`
 
-## Usage Examples
 
-Once inside the container:
-
-```bash
-# Ask Copilot a question
-gh copilot suggest "how to list files recursively"
-
-# Explain a command
-gh copilot explain "tar -xzvf file.tar.gz"
-
-# Get help
-gh copilot --help
-```
 
 ## Security Features
 
@@ -75,8 +84,15 @@ gh copilot --help
 
 ## Troubleshooting
 
-### SELinux Issues
-If you encounter permission errors on SELinux systems, ensure you use `:Z` or `:z` flags.
+### SELinux Relabeling Errors
+If you encounter "SELinux relabeling not allowed" errors, run from a subdirectory rather than from `/tmp` or your home directory root.
 
 ### GitHub Authentication
 The container uses your host's GitHub authentication via the `GH_TOKEN` environment variable. Ensure you're authenticated on your host with `gh auth login` before running the container.
+
+### Rebuilding the Container
+To rebuild the container image (e.g., to update Copilot CLI):
+```bash
+podman rmi copilot-sandbox
+ghcp copilot  # Will auto-rebuild on next run
+```

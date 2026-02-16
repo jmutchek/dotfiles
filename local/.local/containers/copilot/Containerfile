@@ -13,4 +13,5 @@ RUN mkdir -p /workspace
 
 WORKDIR /workspace
 
-CMD ["copilot"]
+ENTRYPOINT ["copilot"]
+CMD []
