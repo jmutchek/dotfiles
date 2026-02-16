@@ -2,6 +2,13 @@
 
 This container provides a sandboxed environment for running GitHub Copilot CLI with restricted access to your host system.
 
+## Features
+
+- **Sandboxed execution** - Runs in isolated container environment
+- **Session persistence** - Resume copilot sessions across container instances
+- **Token-based auth** - Simple GitHub authentication via token
+- **Auto-build** - Container image builds automatically on first use
+
 ## Quick Start
 
 The easiest way to use this container is via the `ghcp` shell function (installed via dotfiles):
@@ -18,7 +25,39 @@ ghcp suggest "how to list files recursively"
 
 # Explain a command
 ghcp explain "tar -xzvf file.tar.gz"
+
+# Resume your most recent session
+ghcp --continue
+
+# Pick from previous sessions
+ghcp --resume
 ```
+
+## Session Persistence
+
+**By default, `ghcp` persists copilot sessions** by mounting your `~/.copilot` directory into the container. This enables:
+
+- **Session resumption** - Use `--continue` to resume your most recent conversation
+- **Session history** - Use `--resume` to pick from any previous session
+- **Shared config** - Model preferences and settings work across container and host
+- **Command history** - Your copilot command history is preserved
+
+### How It Works
+
+Rootless podman maps the container's root user (UID 0) to your host user (UID 1000), ensuring:
+- Files created in the container are owned by your host user
+- Permissions are preserved correctly
+- Both container and host copilot can access sessions
+
+### Ephemeral Mode
+
+If you prefer isolated sessions that don't persist:
+
+```bash
+ghcp --ghcp-no-sessions [command...]
+```
+
+This runs copilot without mounting the `.copilot` directory, creating a fresh ephemeral session each time.
 
 The `ghcp` command:
 - Auto-builds the container image on first use
