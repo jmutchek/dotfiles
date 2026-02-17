@@ -5,6 +5,7 @@ This container provides a sandboxed environment for running GitHub Copilot CLI w
 ## Features
 
 - **Sandboxed execution** - Runs in isolated container environment
+- **Network isolation** - Blocks local network access, allows public internet only
 - **Session persistence** - Resume copilot sessions across container instances
 - **Token-based auth** - Simple GitHub authentication via token
 - **Auto-build** - Container image builds automatically on first use
@@ -59,14 +60,67 @@ ghcp --ghcp-no-sessions [command...]
 
 This runs copilot without mounting the `.copilot` directory, creating a fresh ephemeral session each time.
 
+## Network Isolation
+
+**By default, `ghcp` isolates the container from your local network** using an OCI hook that configures a firewall in the container's network namespace.
+
+### What's Blocked
+
+- ❌ Local network access (192.168.x.x, 10.x.x.x, 172.16.x.x, etc.)
+- ❌ Local DNS servers
+- ❌ Link-local addresses (169.254.x.x)
+- ❌ Multicast and reserved ranges
+
+### What's Allowed
+
+- ✅ Public internet (GitHub Copilot API, npm, git, HTTPS, etc.)
+- ✅ Container-internal services (127.0.0.1 inside container)
+- ✅ Public DNS servers only (Google: 8.8.8.8, Cloudflare: 1.1.1.1, Quad9: 9.9.9.9)
+
+### How It Works
+
+The network isolation uses an **OCI createContainer hook** that:
+1. Runs before the container starts
+2. Configures nftables firewall in the container's network namespace
+3. Enforces rules that the container cannot modify (no NET_ADMIN capability)
+
+The firewall script is located at: `~/.local/containers/copilot/scripts/configure-firewall.sh`
+
+### Disable Network Isolation
+
+If you need to access local network resources:
+
+```bash
+ghcp --ghcp-no-firewall [command...]
+```
+
+This disables the firewall and allows full network access including local networks.
+
+### Technical Details
+
+The firewall uses nftables with these rules:
+- Allow established/related connections
+- Allow loopback (127.0.0.1)
+- Allow DNS to public servers: 8.8.8.8, 8.8.4.4, 1.1.1.1, 1.0.0.1, 9.9.9.9, 149.112.112.112
+- Block all private IP ranges
+- Allow all other traffic (public internet)
+
+For implementation details, see the firewall script or refer to the [podman networking docs](https://github.com/eriksjolund/podman-networking-docs#set-up-container-firewall).
+
+## Using ghcp## Using ghcp
+
 The `ghcp` command:
 - Auto-builds the container image on first use
 - Mounts your current directory to `/workspace` in the container
 - Passes your GitHub authentication via `GH_TOKEN` environment variable
+- Configures network isolation by default (blocks local network access)
+- Uses public DNS servers (8.8.8.8, 1.1.1.1)
 - Forwards all arguments to the copilot command
 
 **Built-in Commands:**
 - `ghcp --ghcp-rebuild` - Rebuild container to update Copilot CLI to latest version
+- `ghcp --ghcp-no-sessions` - Run in ephemeral mode (no session persistence)
+- `ghcp --ghcp-no-firewall` - Disable network isolation for this session
 - `ghcp --ghcp-help` - Show ghcp help (for copilot help, use `ghcp --help`)
 
 All flags not starting with `--ghcp-` are passed through to copilot.
@@ -116,9 +170,15 @@ The `:Z` flag is important for SELinux systems to properly label the volume.
 
 ## Security Features
 
-- Rootless Podman maps container root to your unprivileged host user
-- Isolated from host system (except mounted volumes)
-- GitHub token passed as environment variable (no credential files in container)
+- **Rootless Podman** - Container root maps to your unprivileged host user
+- **Network Isolation** - OCI hook-based firewall blocks local network access
+  - Blocks: 192.168.x.x, 10.x.x.x, 172.16.x.x, 169.254.x.x, multicast, reserved
+  - Allows: Public internet only, container-internal localhost
+  - DNS: Public servers only (Google, Cloudflare, Quad9)
+  - Container cannot bypass (no NET_ADMIN capability)
+- **Isolated Container** - Separated from host system (except mounted volumes)
+- **Token-based Auth** - GitHub token passed as environment variable (no credential files)
+- **SELinux Support** - Proper volume labeling for additional confinement
 
 ## Volume Mount Options
 
