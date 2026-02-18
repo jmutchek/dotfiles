@@ -176,9 +176,71 @@ The `:Z` flag is important for SELinux systems to properly label the volume.
   - Allows: Public internet only, container-internal localhost
   - DNS: Public servers only (Google, Cloudflare, Quad9)
   - Container cannot bypass (no NET_ADMIN capability)
+- **Tool Restrictions** - Configure which tools Copilot can use (see Denied Tools section)
 - **Isolated Container** - Separated from host system (except mounted volumes)
 - **Token-based Auth** - GitHub token passed as environment variable (no credential files)
 - **SELinux Support** - Proper volume labeling for additional confinement
+
+## Denied Tools
+
+The sandbox supports restricting which tools GitHub Copilot can use via the `--deny-tool` flag. This helps prevent Copilot from accessing sensitive systems or credentials through shell commands.
+
+### Configuration File
+
+Tool restrictions are configured in: `~/.local/containers/copilot/denied-tools.conf`
+
+**Format:**
+- One tool pattern per line
+- Lines starting with `#` are comments
+- Blank lines are ignored
+- Each pattern is passed to: `copilot --deny-tool 'PATTERN'`
+
+**Example configuration:**
+```
+# Denied Tools Configuration
+
+# 1Password CLI - prevent access to password manager
+shell(op)
+
+# Kubernetes CLI - prevent cluster access
+shell(kubectl)
+
+# AWS CLI - prevent cloud access
+shell(aws)
+```
+
+### Tool Pattern Examples
+
+- `shell(op)` - Denies the specific shell command `op` (1Password CLI)
+- `shell(kubectl)` - Denies kubectl command
+- `shell(aws)` - Denies AWS CLI
+- `shell(ssh)` - Denies SSH access
+- `bash` - Denies a tool by name
+
+### Default Configuration
+
+By default, the sandbox denies:
+- `shell(op)` - 1Password CLI (to protect password manager access)
+
+Additional security-sensitive tools are included as commented examples in the config file.
+
+### Editing the Configuration
+
+1. Edit the config file:
+   ```bash
+   nano ~/.local/containers/copilot/denied-tools.conf
+   ```
+
+2. Add or remove tool patterns as needed
+
+3. Changes take effect on the next `ghcp` invocation (no rebuild needed)
+
+### Disabling Tool Restrictions
+
+To temporarily disable all tool restrictions, you can:
+- Comment out all entries in the config file, or
+- Rename/remove the config file
+
 
 ## Volume Mount Options
 

@@ -115,24 +115,37 @@ HOOKEOF
         fi
     fi
     
-    # Build mount arguments
-    local mount_args="-v $PWD:/workspace:Z"
-    if [[ "$persist_sessions" == "true" ]]; then
-        mount_args="$mount_args -v $HOME/.copilot:/root/.copilot:z"
+    # Build denied tools arguments from config file
+    local denied_tools_args=()
+    local denied_tools_config="$container_dir/denied-tools.conf"
+    if [[ -f "$denied_tools_config" ]]; then
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            # Skip empty lines and comments
+            [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+            # Add --deny-tool flag for each tool pattern
+            denied_tools_args+=(--deny-tool "$line")
+        done < "$denied_tools_config"
     fi
     
-    # Build firewall arguments
-    local firewall_args=""
+    # Build podman command arguments as array
+    local podman_args=(run -it --rm)
+    
+    # Add firewall arguments
     if [[ "$firewall_enabled" == "true" ]]; then
-        firewall_args="--hooks-dir $hooks_dir --annotation ghcp-firewall=enabled"
-        firewall_args="$firewall_args --dns=8.8.8.8 --dns=1.1.1.1"
+        podman_args+=(--hooks-dir "$hooks_dir" --annotation ghcp-firewall=enabled)
+        podman_args+=(--dns=8.8.8.8 --dns=1.1.1.1)
     fi
     
-    # Run container with current directory mounted
-    podman run -it --rm \
-        $firewall_args \
-        $mount_args \
-        -e GH_TOKEN="$(gh auth token 2>/dev/null)" \
-        "$container_name" \
-        "${args[@]}"
+    # Add mount arguments
+    podman_args+=(-v "$PWD:/workspace:Z")
+    if [[ "$persist_sessions" == "true" ]]; then
+        podman_args+=(-v "$HOME/.copilot:/root/.copilot:z")
+    fi
+    
+    # Add environment and container name
+    podman_args+=(-e "GH_TOKEN=$(gh auth token 2>/dev/null)")
+    podman_args+=("$container_name")
+    
+    # Run container with all arguments
+    podman "${podman_args[@]}" "${denied_tools_args[@]}" "${args[@]}"
 }
