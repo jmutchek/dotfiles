@@ -8,6 +8,7 @@ ghcp() {
     local persist_sessions=true
     local firewall_enabled=true
     local args=()
+    local user_model_specified=false
     
     # Parse arguments for ghcp-specific flags
     for arg in "$@"; do
@@ -65,6 +66,11 @@ Network Isolation:
   For details, see: ~/.local/containers/copilot/scripts/configure-firewall.sh
 
 All flags not starting with --ghcp- are passed through to the copilot command.
+
+AGENTS.md:
+  If an AGENTS.md with YAML front-matter is found in the current directory or a parent
+  (up to the git repo root), ghcp may set defaults like --model (user --model wins).
+
 The container auto-builds on first use and mounts your current directory.
 EOF
                 return 0
@@ -76,6 +82,7 @@ EOF
                 firewall_enabled=false
                 ;;
             *)
+                [[ "$arg" == "--model" || "$arg" == --model=* ]] && user_model_specified=true
                 args+=("$arg")
                 ;;
         esac
@@ -126,7 +133,42 @@ HOOKEOF
             denied_tools_args+=(--deny-tool "$line")
         done < "$denied_tools_config"
     fi
-    
+
+    # Apply model default from AGENTS.md front-matter (user --model wins)
+    if [[ "$user_model_specified" == "false" ]]; then
+        local repo_root=""
+        repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || true
+
+        local agents_file=""
+        local search_dir="$PWD"
+        while :; do
+            if [[ -f "$search_dir/AGENTS.md" ]]; then
+                agents_file="$search_dir/AGENTS.md"
+                break
+            fi
+            [[ "$search_dir" == "/" ]] && break
+            [[ -n "$repo_root" && "$search_dir" == "$repo_root" ]] && break
+            search_dir="$(dirname "$search_dir")"
+        done
+
+        if [[ -n "$agents_file" ]]; then
+            local agents_model=""
+            agents_model="$(awk '
+                NR==1 && $0!="---" { exit }
+                NR==1 { in_frontmatter=1; next }
+                in_frontmatter && $0=="---" { exit }
+                in_frontmatter && $0 ~ /^[[:space:]]*model[[:space:]]*:/ {
+                    sub(/^[[:space:]]*model[[:space:]]*:[[:space:]]*/, "", $0)
+                    gsub(/[[:space:]]+$/, "", $0)
+                    print $0
+                    exit
+                }' "$agents_file" 2>/dev/null)"
+            if [[ "$agents_model" == "gpt-5.2" ]]; then
+                args=(--model "$agents_model" "${args[@]}")
+            fi
+        fi
+    fi
+
     # Build podman command arguments as array
     local podman_args=(run -it --rm)
     

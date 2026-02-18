@@ -125,6 +125,13 @@ The `ghcp` command:
 
 All flags not starting with `--ghcp-` are passed through to copilot.
 
+### AGENTS.md defaults
+
+If an `AGENTS.md` file with YAML front-matter is found in the current directory or a parent directory (walking upward until the git repo root or `/`), `ghcp` may apply defaults to the Copilot CLI invocation.
+
+- Currently supported: `model: gpt-5.2` → adds `--model gpt-5.2`
+- Precedence: if you pass `--model ...` yourself, `ghcp` will not override it.
+
 ## Installation
 
 1. Ensure you're authenticated with GitHub CLI on your host:
