@@ -7,3 +7,5 @@
 [user]
 	name = jmutchek
 	email = john5@mutchek.com
+[init]
+	defaultBranch = main
