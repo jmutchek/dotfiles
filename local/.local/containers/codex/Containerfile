@@ -1,0 +1,17 @@
+FROM node:20-bookworm-slim
+
+# Install git
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install OpenAI Codex CLI via npm
+RUN npm install -g @openai/codex
+
+# Create workspace directory
+RUN mkdir -p /workspace
+
+WORKDIR /workspace
+
+ENTRYPOINT ["codex"]
+CMD []
