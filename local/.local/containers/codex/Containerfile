@@ -1,8 +1,9 @@
 FROM node:20-bookworm-slim
 
-# Install git
+# Install tools
 RUN apt-get update && apt-get install -y \
     git \
+    ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
 # Install OpenAI Codex CLI via npm
