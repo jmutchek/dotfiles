@@ -1,0 +1,18 @@
+FROM node:20-bookworm-slim
+
+# Install tools
+RUN apt-get update && apt-get install -y \
+    git \
+    ripgrep \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Claude Code CLI via npm
+RUN npm install -g @anthropic-ai/claude-code
+
+# Create workspace directory
+RUN mkdir -p /workspace
+
+WORKDIR /workspace
+
+ENTRYPOINT ["claude"]
+CMD []
