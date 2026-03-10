@@ -28,8 +28,11 @@ Examples:
   cld --cld-no-firewall     Run with local network access enabled
 
 Authentication:
-  Set ANTHROPIC_API_KEY in your host environment before running.
-  The key is passed into the container automatically.
+  Two authentication methods are supported (in priority order):
+  1. ANTHROPIC_API_KEY env var - set in your host environment
+  2. OAuth credentials - from a previous 'claude' login on the host
+     (~/.claude/.credentials.json is read automatically)
+  At least one must be available; cld warns if neither is found.
 
 Session Persistence:
   By default, cld mounts ~/.claude to persist sessions across container runs.
@@ -102,6 +105,16 @@ _cld_setup_firewall_hook() {
   "stages": ["createContainer"]
 }\n' "$HOME" > "$hook_policy"
     fi
+}
+
+# Read the OAuth access token from ~/.claude/.credentials.json, if present.
+# Accepts an optional explicit path; defaults to $HOME/.claude/.credentials.json.
+# Prints the token to stdout; prints nothing if unavailable.
+# Claude Code stores OAuth credentials here after 'claude auth login'.
+_cld_get_oauth_token() {
+    local creds_file="${1:-$HOME/.claude/.credentials.json}"
+    [[ -f "$creds_file" ]] || return 0
+    jq -r '.claudeAiOauth.accessToken // empty' "$creds_file" 2>/dev/null
 }
 
 # Walk from search_dir up to repo_root (or /) looking for AGENTS.md with a
@@ -188,9 +201,14 @@ cld() {
         [[ -n "$agents_model" ]] && args=(--model "$agents_model" "${args[@]}")
     fi
 
-    # --- Warn if API key is not set -----------------------------------------
+    # --- Resolve authentication ---------------------------------------------
+    # Prefer ANTHROPIC_API_KEY; fall back to OAuth token from credentials file.
+    local oauth_token=""
     if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
-        echo "Warning: ANTHROPIC_API_KEY is not set. Claude Code will likely fail to authenticate." >&2
+        oauth_token="$(_cld_get_oauth_token)"
+        if [[ -z "$oauth_token" ]]; then
+            echo "Warning: No authentication found. Set ANTHROPIC_API_KEY or run 'claude auth login' on the host first." >&2
+        fi
     fi
 
     # --- Assemble and run podman command ------------------------------------
@@ -205,6 +223,7 @@ cld() {
     [[ "$persist_sessions" == "true" ]] && podman_args+=(-v "$HOME/.claude:/root/.claude:z")
 
     podman_args+=(-e "ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}")
+    [[ -n "$oauth_token" ]] && podman_args+=(-e "CLAUDE_CODE_OAUTH_TOKEN=$oauth_token")
     podman_args+=("$container_name")
 
     podman "${podman_args[@]}" "${args[@]}"

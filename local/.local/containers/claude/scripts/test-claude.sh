@@ -151,6 +151,44 @@ test_help() {
 }
 
 # ---------------------------------------------------------------------------
+# _cld_get_oauth_token
+# ---------------------------------------------------------------------------
+test_get_oauth_token() {
+    echo ""
+    echo "--- _cld_get_oauth_token ---"
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    trap 'rm -rf "$tmpdir"' RETURN
+
+    local creds_dir="$tmpdir/.claude"
+    local creds_file="$creds_dir/.credentials.json"
+    mkdir -p "$creds_dir"
+
+    # No credentials file → empty output
+    assert_eq "no credentials file → empty" \
+        "$(_cld_get_oauth_token)" ""
+
+    # Valid credentials file → access token returned
+    printf '{"claudeAiOauth":{"accessToken":"sk-ant-oat-abc123","refreshToken":"rt","expiresAt":9999999999000,"scopes":["user:inference"]}}\n' \
+        > "$creds_file"
+    assert_eq "access token extracted from credentials" \
+        "$(_cld_get_oauth_token "$creds_file")" "sk-ant-oat-abc123"
+
+    # No claudeAiOauth key → empty output
+    printf '{"someOtherKey":{"accessToken":"other"}}\n' > "$creds_file"
+    assert_eq "missing claudeAiOauth key → empty" \
+        "$(_cld_get_oauth_token "$creds_file")" ""
+
+    # Malformed JSON → empty output (no error)
+    printf 'not-valid-json\n' > "$creds_file"
+    assert_eq "malformed JSON → empty" \
+        "$(_cld_get_oauth_token "$creds_file")" ""
+
+    local old_home="$HOME"
+    HOME="$old_home"
+}
+
+# ---------------------------------------------------------------------------
 # cld() argument parsing  (podman + git mocked; no real container needed)
 #
 # podman() writes its arguments to $_CLD_TEST_CAPTURE so tests can inspect
@@ -167,7 +205,7 @@ test_cld_arg_parsing() {
     local tmpdir
     tmpdir=$(mktemp -d)
     _CLD_TEST_CAPTURE="$tmpdir/capture"
-    trap 'rm -rf "$tmpdir"; unset -f podman git _cld_build_image _cld_setup_firewall_hook' RETURN
+    trap 'rm -rf "$tmpdir"; unset -f podman git _cld_build_image _cld_setup_firewall_hook _cld_get_oauth_token' RETURN
 
     # Mock external commands so no real podman/git/image operations occur.
     podman()                  { echo "podman $*" > "$_CLD_TEST_CAPTURE"; }
@@ -189,8 +227,8 @@ test_cld_arg_parsing() {
 
     # Default run: firewall args and session mount both present
     cld 2>/dev/null; out="$(cat "$_CLD_TEST_CAPTURE")"
-    assert_contains "firewall enabled by default"          "$out" "--hooks-dir"
-    assert_contains "session mount present by default"     "$out" ".claude"
+    assert_contains "firewall enabled by default"           "$out" "--hooks-dir"
+    assert_contains "session mount present by default"      "$out" ".claude"
     assert_contains "ANTHROPIC_API_KEY passed to container" "$out" "ANTHROPIC_API_KEY"
 
     # --cld-no-sessions: session mount omitted
@@ -200,8 +238,8 @@ test_cld_arg_parsing() {
 
     # --cld-no-firewall: firewall args omitted
     cld --cld-no-firewall 2>/dev/null; out="$(cat "$_CLD_TEST_CAPTURE")"
-    assert_not_contains "--cld-no-firewall omits --hooks-dir" "$out" "--hooks-dir"
-    assert_not_contains "--cld-no-firewall omits --dns"       "$out" "--dns"
+    assert_not_contains "--cld-no-firewall omits --hooks-dir"   "$out" "--hooks-dir"
+    assert_not_contains "--cld-no-firewall omits --dns"         "$out" "--dns"
     assert_contains     "--cld-no-firewall keeps session mount" "$out" ".claude"
 
     # Arbitrary pass-through args appear verbatim in the podman call
@@ -240,12 +278,22 @@ test_cld_arg_parsing() {
     assert_contains "--cld-update calls _cld_rebuild" "$out" "rebuild called"
     unset -f _cld_rebuild
 
-    # API key warning printed when ANTHROPIC_API_KEY is unset
+    # OAuth token from credentials file is passed as CLAUDE_CODE_OAUTH_TOKEN
+    # when ANTHROPIC_API_KEY is unset. Mock _cld_get_oauth_token to return a
+    # test token (actual JSON parsing is tested in test_get_oauth_token).
     ANTHROPIC_API_KEY=""
-    cld 2>"$tmpdir/stderr"; out="$(cat "$tmpdir/stderr")"
-    assert_contains "warns when ANTHROPIC_API_KEY unset" "$out" "ANTHROPIC_API_KEY"
+    _cld_get_oauth_token() { echo "sk-ant-oat-test"; }
+    cld 2>/dev/null; out="$(cat "$_CLD_TEST_CAPTURE")"
+    assert_contains     "OAuth token passed as CLAUDE_CODE_OAUTH_TOKEN" "$out" "CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat-test"
+    assert_not_contains "ANTHROPIC_API_KEY not set when using OAuth"    "$out" "ANTHROPIC_API_KEY=sk-ant"
 
-    # Restore API key
+    # Warning printed when neither ANTHROPIC_API_KEY nor OAuth token available
+    _cld_get_oauth_token() { return 0; }
+    cld 2>"$tmpdir/stderr"; out="$(cat "$tmpdir/stderr")"
+    assert_contains "warns when no auth available" "$out" "No authentication found"
+    unset -f _cld_get_oauth_token
+
+    # Restore
     ANTHROPIC_API_KEY="$old_key"
 }
 
@@ -257,6 +305,7 @@ echo "=== cld tests ==="
 test_detect_model
 test_setup_firewall_hook
 test_help
+test_get_oauth_token
 test_cld_arg_parsing
 
 echo ""
