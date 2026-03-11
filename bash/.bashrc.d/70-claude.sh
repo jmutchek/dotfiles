@@ -28,16 +28,16 @@ Examples:
   cld --cld-no-firewall     Run with local network access enabled
 
 Authentication:
-  Two authentication methods are supported (in priority order):
-  1. ANTHROPIC_API_KEY env var - set in your host environment
-  2. OAuth credentials - from a previous 'claude' login on the host
-     (~/.claude/.credentials.json is read automatically)
-  At least one must be available; cld warns if neither is found.
+  Credentials are provided by mounting host files into the container:
+  - ~/.claude/.credentials.json (OAuth credentials from 'claude auth login')
+  - ~/.claude.json (additional auth configuration)
+  Run 'claude auth login' on the host first to create these files.
 
 Session Persistence:
   By default, cld mounts ~/.claude to persist sessions across container runs.
   This allows you to use --continue to restore previous sessions.
-  Use --cld-no-sessions to run in ephemeral mode (no session persistence).
+  Use --cld-no-sessions to run in ephemeral mode (auth files are still
+  mounted read-only, but sessions are not persisted).
 
 Network Isolation:
   By default, cld isolates the container from your local network using an
@@ -105,16 +105,6 @@ _cld_setup_firewall_hook() {
   "stages": ["createContainer"]
 }\n' "$HOME" > "$hook_policy"
     fi
-}
-
-# Read the OAuth access token from ~/.claude/.credentials.json, if present.
-# Accepts an optional explicit path; defaults to $HOME/.claude/.credentials.json.
-# Prints the token to stdout; prints nothing if unavailable.
-# Claude Code stores OAuth credentials here after 'claude auth login'.
-_cld_get_oauth_token() {
-    local creds_file="${1:-$HOME/.claude/.credentials.json}"
-    [[ -f "$creds_file" ]] || return 0
-    jq -r '.claudeAiOauth.accessToken // empty' "$creds_file" 2>/dev/null
 }
 
 # Walk from search_dir up to repo_root (or /) looking for AGENTS.md with a
@@ -201,16 +191,6 @@ cld() {
         [[ -n "$agents_model" ]] && args=(--model "$agents_model" "${args[@]}")
     fi
 
-    # --- Resolve authentication ---------------------------------------------
-    # Prefer ANTHROPIC_API_KEY; fall back to OAuth token from credentials file.
-    local oauth_token=""
-    if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
-        oauth_token="$(_cld_get_oauth_token)"
-        if [[ -z "$oauth_token" ]]; then
-            echo "Warning: No authentication found. Set ANTHROPIC_API_KEY or run 'claude auth login' on the host first." >&2
-        fi
-    fi
-
     # --- Assemble and run podman command ------------------------------------
     local podman_args=(run -it --rm)
 
@@ -220,10 +200,15 @@ cld() {
     fi
 
     podman_args+=(-v "$PWD:/workspace:Z")
-    [[ "$persist_sessions" == "true" ]] && podman_args+=(-v "$HOME/.claude:/root/.claude:z")
 
-    podman_args+=(-e "ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}")
-    [[ -n "$oauth_token" ]] && podman_args+=(-e "CLAUDE_CODE_OAUTH_TOKEN=$oauth_token")
+    if [[ "$persist_sessions" == "true" ]]; then
+        podman_args+=(-v "$HOME/.claude:/root/.claude:z")
+        podman_args+=(-v "$HOME/.claude.json:/root/.claude.json:z")
+    else
+        podman_args+=(-v "$HOME/.claude/.credentials.json:/root/.claude/.credentials.json:ro,z")
+        podman_args+=(-v "$HOME/.claude.json:/root/.claude.json:ro,z")
+    fi
+
     podman_args+=("$container_name")
 
     podman "${podman_args[@]}" "${args[@]}"

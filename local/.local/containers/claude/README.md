@@ -7,7 +7,7 @@ This container provides a sandboxed environment for running Claude Code CLI with
 - **Sandboxed execution** - Runs in isolated container environment
 - **Network isolation** - Blocks local network access, allows public internet only
 - **Session persistence** - Resume Claude Code sessions across container instances
-- **API key auth** - Simple authentication via `ANTHROPIC_API_KEY` environment variable
+- **Credential mount** - Authentication via mounted `~/.claude` credential files
 - **Auto-build** - Container image builds automatically on first use
 
 ## Quick Start
@@ -33,15 +33,20 @@ cld --model claude-opus-4-5 "refactor this module"
 
 ## Authentication
 
-Set `ANTHROPIC_API_KEY` in your host environment before running `cld`. The key is
-passed into the container automatically:
+Run `claude auth login` on the host before using `cld`. The credential files
+(`~/.claude/.credentials.json` and `~/.claude.json`) are mounted into the container
+automatically:
 
 ```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
+# Log in on the host first
+claude auth login
+
+# Then use cld — credentials are mounted automatically
 cld
 ```
 
-If the variable is unset, `cld` will warn and Claude Code will fail with an auth error.
+In `--cld-no-sessions` mode, the credential files are mounted read-only so
+authentication works but sessions are not persisted.
 
 ## Session Persistence
 
@@ -117,7 +122,7 @@ The firewall uses nftables with these rules:
 The `cld` command:
 - Auto-builds the container image on first use
 - Mounts your current directory to `/workspace` in the container
-- Passes your `ANTHROPIC_API_KEY` into the container via environment variable
+- Mounts `~/.claude` and `~/.claude.json` for authentication
 - Configures network isolation by default (blocks local network access)
 - Uses public DNS servers (8.8.8.8, 1.1.1.1)
 - Forwards all arguments to the `claude` command
@@ -144,9 +149,9 @@ field is only used by the `cld` wrapper for model selection.
 
 ## Installation
 
-1. Ensure `ANTHROPIC_API_KEY` is set in your host environment:
+1. Log in to Claude on the host:
    ```bash
-   export ANTHROPIC_API_KEY="sk-ant-..."
+   claude auth login
    ```
 
 2. Deploy dotfiles with GNU Stow:
@@ -168,10 +173,11 @@ If you want to build and run the container manually:
 # Build the image
 podman build -t claude-sandbox -f Containerfile .
 
-# Run with current directory mounted
+# Run with current directory and credentials mounted
 podman run -it --rm \
   -v "$PWD:/workspace:Z" \
-  -e ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+  -v "$HOME/.claude:/root/.claude:z" \
+  -v "$HOME/.claude.json:/root/.claude.json:z" \
   claude-sandbox
 ```
 
@@ -192,7 +198,7 @@ The `:Z` flag is important for SELinux systems to properly label the volume.
   - DNS: Public servers only (Google, Cloudflare, Quad9)
   - Container cannot bypass (no NET_ADMIN capability)
 - **Isolated Container** - Separated from host system (except mounted volumes)
-- **API key auth** - Key passed as environment variable (no credential files mounted)
+- **Credential mount** - Auth files mounted from host (read-only in ephemeral mode)
 - **SELinux Support** - Proper volume labeling for additional confinement
 
 ## Volume Mount Options
@@ -229,8 +235,8 @@ cld --version
 If you encounter "SELinux relabeling not allowed" errors, run from a subdirectory rather than from `/tmp` or your home directory root.
 
 ### Authentication Errors
-Ensure `ANTHROPIC_API_KEY` is set and valid in your host environment before running `cld`.
-Check the key is exported: `echo $ANTHROPIC_API_KEY`
+Ensure you have logged in on the host with `claude auth login` before running `cld`.
+Verify the credential files exist: `ls ~/.claude/.credentials.json ~/.claude.json`
 
 ### Rebuilding the Container
 See "Updating Claude Code CLI" section above for instructions on updating to the latest version.
