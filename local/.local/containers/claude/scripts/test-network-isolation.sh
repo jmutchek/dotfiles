@@ -1,8 +1,8 @@
 #!/bin/bash
-# Test script for cld network isolation
-# Run this from within a cld session to verify firewall is working
+# Test script for agent claude network isolation
+# Run this from within an 'agent claude' session to verify firewall is working
 
-echo "=== Testing cld Network Isolation ==="
+echo "=== Testing agent claude Network Isolation ==="
 echo ""
 
 echo "Test 1: Public internet (should work)"

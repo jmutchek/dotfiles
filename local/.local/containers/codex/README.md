@@ -12,45 +12,45 @@ This container provides a sandboxed environment for running OpenAI Codex CLI wit
 
 ## Quick Start
 
-The easiest way to use this container is via the `cx` shell function (installed via dotfiles):
+The easiest way to use this container is via the `agent` command (installed via dotfiles):
 
 ```bash
 # From any directory - automatically mounts current directory
-cx
+agent codex
 
 # Check version
-cx --version
+agent codex --version
 
 # Run Codex non-interactively
-cx exec "fix the failing tests"
+agent codex exec "fix the failing tests"
 
 # Resume your most recent session (interactive)
-cx resume --last
+agent codex resume --last
 
 # Fork most recent session into a new thread
-cx fork --last
+agent codex fork --last
 ```
 
 ## Authentication
 
-Set `OPENAI_API_KEY` in your host environment before running `cx`. The key is
+Set `OPENAI_API_KEY` in your host environment before running `agent codex`. The key is
 passed into the container automatically:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
-cx
+agent codex
 ```
 
-If the variable is unset, `cx` will warn and Codex will fail with an auth error.
+If the variable is unset, `agent codex` will warn and Codex will fail with an auth error.
 
 ## Session Persistence
 
-**By default, `cx` persists Codex sessions** by mounting your `~/.codex` directory into the container. This enables:
+**By default, `agent codex` persists Codex sessions** by mounting your `~/.codex` directory into the container. This enables:
 
-- **Session resumption** - Use `cx resume --last` to resume your most recent conversation
-- **Session history** - Use `cx resume` to pick from any previous session
+- **Session resumption** - Use `agent codex resume --last` to resume your most recent conversation
+- **Session history** - Use `agent codex resume` to pick from any previous session
 - **Shared config** - Model preferences and settings (`~/.codex/config.toml`) work across container and host
-- **Fork sessions** - Use `cx fork --last` to branch a previous conversation
+- **Fork sessions** - Use `agent codex fork --last` to branch a previous conversation
 
 ### How It Works
 
@@ -64,14 +64,14 @@ Rootless podman maps the container's root user (UID 0) to your host user (UID 10
 If you prefer isolated sessions that don't persist:
 
 ```bash
-cx --cx-no-sessions [command...]
+agent codex --agent-no-sessions [command...]
 ```
 
 This runs Codex without mounting the `.codex` directory, creating a fresh ephemeral session each time.
 
 ## Network Isolation
 
-**By default, `cx` isolates the container from your local network** using an OCI hook that configures a firewall in the container's network namespace.
+**By default, `agent codex` isolates the container from your local network** using an OCI hook that configures a firewall in the container's network namespace.
 
 ### What's Blocked
 
@@ -100,7 +100,7 @@ The firewall script is located at: `~/.local/containers/codex/scripts/configure-
 If you need to access local network resources:
 
 ```bash
-cx --cx-no-firewall [command...]
+agent codex --agent-no-firewall [command...]
 ```
 
 This disables the firewall and allows full network access including local networks.
@@ -114,35 +114,35 @@ The firewall uses nftables with these rules:
 - Block all private IP ranges
 - Allow all other traffic (public internet)
 
-## Using cx
+## Using agent codex
 
-The `cx` command:
+The `agent codex` command:
 - Auto-builds the container image on first use
 - Mounts your current directory to `/workspace` in the container
 - Passes your `OPENAI_API_KEY` into the container via environment variable
 - Configures network isolation by default (blocks local network access)
-- Uses public DNS servers (8.8.8.8, 1.1.1.1)
+- Uses public DNS servers (8.8.8.8, 1.1.1.1, 9.9.9.9)
 - Forwards all arguments to the `codex` command
 
 **Built-in Commands:**
-- `cx --cx-rebuild` - Rebuild container to update Codex CLI to latest version
-- `cx --cx-no-sessions` - Run in ephemeral mode (no session persistence)
-- `cx --cx-no-firewall` - Disable network isolation for this session
-- `cx --cx-help` - Show cx help (for codex help, use `cx --help`)
+- `agent codex --agent-rebuild` - Rebuild container to update Codex CLI to latest version
+- `agent codex --agent-no-sessions` - Run in ephemeral mode (no session persistence)
+- `agent codex --agent-no-firewall` - Disable network isolation for this session
+- `agent codex --agent-help` - Show agent help (for codex help, use `agent codex --help`)
 
-All flags not starting with `--cx-` are passed through to `codex`.
+All flags not starting with `--agent-` are passed through to `codex`.
 
 ### AGENTS.md defaults
 
 If an `AGENTS.md` file with YAML front-matter is found in the current directory or a parent
-directory (walking upward until the git repo root or `/`), `cx` may apply defaults to the
+directory (walking upward until the git repo root or `/`), `agent codex` may apply defaults to the
 Codex CLI invocation.
 
 - Currently supported: `model: gpt-5-codex` → adds `--model gpt-5-codex`
-- Precedence: if you pass `--model ...` or `-m ...` yourself, `cx` will not override it.
+- Precedence: if you pass `--model ...` or `-m ...` yourself, `agent` will not override it.
 
 Note: Codex also reads `AGENTS.md` natively for agent instructions. The front-matter `model:`
-field is only used by the `cx` wrapper for model selection.
+field is only used by the `agent` wrapper for model selection.
 
 ## Installation
 
@@ -211,7 +211,7 @@ The workspace uses `:Z` (private) for stronger isolation.
 
 ### Recommended: Use Built-in Rebuild Command
 ```bash
-cx --cx-rebuild
+agent codex --agent-rebuild
 ```
 
 This removes the old container image and rebuilds it with the latest Codex CLI from npm.
@@ -221,8 +221,8 @@ This removes the old container image and rebuilds it with the latest Codex CLI f
 # Remove old image
 podman rmi codex-sandbox
 
-# Next cx command will auto-rebuild
-cx --version
+# Next agent codex command will auto-rebuild
+agent codex --version
 ```
 
 ## Troubleshooting
@@ -231,7 +231,7 @@ cx --version
 If you encounter "SELinux relabeling not allowed" errors, run from a subdirectory rather than from `/tmp` or your home directory root.
 
 ### Authentication Errors
-Ensure `OPENAI_API_KEY` is set and valid in your host environment before running `cx`.
+Ensure `OPENAI_API_KEY` is set and valid in your host environment before running `agent codex`.
 Check the key is exported: `echo $OPENAI_API_KEY`
 
 ### Rebuilding the Container
