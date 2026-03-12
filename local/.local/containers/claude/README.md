@@ -12,28 +12,28 @@ This container provides a sandboxed environment for running Claude Code CLI with
 
 ## Quick Start
 
-The easiest way to use this container is via the `cld` shell function (installed via dotfiles):
+The easiest way to use this container is via the `agent` command (installed via dotfiles):
 
 ```bash
 # From any directory - automatically mounts current directory
-cld
+agent claude
 
 # Check version
-cld --version
+agent claude --version
 
 # Run Claude Code with a prompt
-cld "fix the failing tests"
+agent claude "fix the failing tests"
 
 # Resume your most recent session
-cld --continue
+agent claude --continue
 
 # Use a specific model
-cld --model claude-opus-4-5 "refactor this module"
+agent claude --model claude-opus-4-5 "refactor this module"
 ```
 
 ## Authentication
 
-Run `claude auth login` on the host before using `cld`. The credential files
+Run `claude auth login` on the host before using `agent claude`. The credential files
 (`~/.claude/.credentials.json` and `~/.claude.json`) are mounted into the container
 automatically:
 
@@ -41,18 +41,18 @@ automatically:
 # Log in on the host first
 claude auth login
 
-# Then use cld — credentials are mounted automatically
-cld
+# Then use agent — credentials are mounted automatically
+agent claude
 ```
 
-In `--cld-no-sessions` mode, the credential files are mounted read-only so
+In `--agent-no-sessions` mode, the credential files are mounted read-only so
 authentication works but sessions are not persisted.
 
 ## Session Persistence
 
-**By default, `cld` persists Claude Code sessions** by mounting your `~/.claude` directory into the container. This enables:
+**By default, `agent claude` persists Claude Code sessions** by mounting your `~/.claude` directory into the container. This enables:
 
-- **Session resumption** - Use `cld --continue` to resume your most recent conversation
+- **Session resumption** - Use `agent claude --continue` to resume your most recent conversation
 - **Shared config** - Model preferences and settings (`~/.claude/`) work across container and host
 
 ### How It Works
@@ -67,14 +67,14 @@ Rootless podman maps the container's root user (UID 0) to your host user (UID 10
 If you prefer isolated sessions that don't persist:
 
 ```bash
-cld --cld-no-sessions [command...]
+agent claude --agent-no-sessions [command...]
 ```
 
 This runs Claude Code without mounting the `.claude` directory, creating a fresh ephemeral session each time.
 
 ## Network Isolation
 
-**By default, `cld` isolates the container from your local network** using an OCI hook that configures a firewall in the container's network namespace.
+**By default, `agent claude` isolates the container from your local network** using an OCI hook that configures a firewall in the container's network namespace.
 
 ### What's Blocked
 
@@ -103,7 +103,7 @@ The firewall script is located at: `~/.local/containers/claude/scripts/configure
 If you need to access local network resources:
 
 ```bash
-cld --cld-no-firewall [command...]
+agent claude --agent-no-firewall [command...]
 ```
 
 This disables the firewall and allows full network access including local networks.
@@ -117,35 +117,35 @@ The firewall uses nftables with these rules:
 - Block all private IP ranges
 - Allow all other traffic (public internet)
 
-## Using cld
+## Using agent claude
 
-The `cld` command:
+The `agent claude` command:
 - Auto-builds the container image on first use
 - Mounts your current directory to `/workspace` in the container
 - Mounts `~/.claude` and `~/.claude.json` for authentication
 - Configures network isolation by default (blocks local network access)
-- Uses public DNS servers (8.8.8.8, 1.1.1.1)
+- Uses public DNS servers (8.8.8.8, 1.1.1.1, 9.9.9.9)
 - Forwards all arguments to the `claude` command
 
 **Built-in Commands:**
-- `cld --cld-rebuild` - Rebuild container to update Claude Code CLI to latest version
-- `cld --cld-no-sessions` - Run in ephemeral mode (no session persistence)
-- `cld --cld-no-firewall` - Disable network isolation for this session
-- `cld --cld-help` - Show cld help (for claude help, use `cld --help`)
+- `agent claude --agent-rebuild` - Rebuild container to update Claude Code CLI to latest version
+- `agent claude --agent-no-sessions` - Run in ephemeral mode (no session persistence)
+- `agent claude --agent-no-firewall` - Disable network isolation for this session
+- `agent claude --agent-help` - Show agent help (for claude help, use `agent claude --help`)
 
-All flags not starting with `--cld-` are passed through to `claude`.
+All flags not starting with `--agent-` are passed through to `claude`.
 
 ### AGENTS.md defaults
 
 If an `AGENTS.md` file with YAML front-matter is found in the current directory or a parent
-directory (walking upward until the git repo root or `/`), `cld` may apply defaults to the
+directory (walking upward until the git repo root or `/`), `agent claude` may apply defaults to the
 Claude Code CLI invocation.
 
 - Currently supported: `model: claude-opus-4-5` → adds `--model claude-opus-4-5`
-- Precedence: if you pass `--model ...` or `-m ...` yourself, `cld` will not override it.
+- Precedence: if you pass `--model ...` or `-m ...` yourself, `agent` will not override it.
 
 Note: Claude Code also reads `AGENTS.md` natively for agent instructions. The front-matter `model:`
-field is only used by the `cld` wrapper for model selection.
+field is only used by the `agent` wrapper for model selection.
 
 ## Installation
 
@@ -215,7 +215,7 @@ The workspace uses `:Z` (private) for stronger isolation.
 
 ### Recommended: Use Built-in Rebuild Command
 ```bash
-cld --cld-rebuild
+agent claude --agent-rebuild
 ```
 
 This removes the old container image and rebuilds it with the latest Claude Code CLI from npm.
@@ -225,8 +225,8 @@ This removes the old container image and rebuilds it with the latest Claude Code
 # Remove old image
 podman rmi claude-sandbox
 
-# Next cld command will auto-rebuild
-cld --version
+# Next agent claude command will auto-rebuild
+agent claude --version
 ```
 
 ## Troubleshooting
@@ -235,7 +235,7 @@ cld --version
 If you encounter "SELinux relabeling not allowed" errors, run from a subdirectory rather than from `/tmp` or your home directory root.
 
 ### Authentication Errors
-Ensure you have logged in on the host with `claude auth login` before running `cld`.
+Ensure you have logged in on the host with `claude auth login` before running `agent claude`.
 Verify the credential files exist: `ls ~/.claude/.credentials.json ~/.claude.json`
 
 ### Rebuilding the Container

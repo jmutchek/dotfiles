@@ -12,31 +12,31 @@ This container provides a sandboxed environment for running GitHub Copilot CLI w
 
 ## Quick Start
 
-The easiest way to use this container is via the `ghcp` shell function (installed via dotfiles):
+The easiest way to use this container is via the `agent` command (installed via dotfiles):
 
 ```bash
 # From any directory - automatically mounts current directory
-ghcp
+agent copilot
 
 # Check version
-ghcp --version
+agent copilot --version
 
 # Ask Copilot a question
-ghcp suggest "how to list files recursively"
+agent copilot suggest "how to list files recursively"
 
 # Explain a command
-ghcp explain "tar -xzvf file.tar.gz"
+agent copilot explain "tar -xzvf file.tar.gz"
 
 # Resume your most recent session
-ghcp --continue
+agent copilot --continue
 
 # Pick from previous sessions
-ghcp --resume
+agent copilot --resume
 ```
 
 ## Session Persistence
 
-**By default, `ghcp` persists copilot sessions** by mounting your `~/.copilot` directory into the container. This enables:
+**By default, `agent copilot` persists copilot sessions** by mounting your `~/.copilot` directory into the container. This enables:
 
 - **Session resumption** - Use `--continue` to resume your most recent conversation
 - **Session history** - Use `--resume` to pick from any previous session
@@ -55,14 +55,14 @@ Rootless podman maps the container's root user (UID 0) to your host user (UID 10
 If you prefer isolated sessions that don't persist:
 
 ```bash
-ghcp --ghcp-no-sessions [command...]
+agent copilot --agent-no-sessions [command...]
 ```
 
 This runs copilot without mounting the `.copilot` directory, creating a fresh ephemeral session each time.
 
 ## Network Isolation
 
-**By default, `ghcp` isolates the container from your local network** using an OCI hook that configures a firewall in the container's network namespace.
+**By default, `agent copilot` isolates the container from your local network** using an OCI hook that configures a firewall in the container's network namespace.
 
 ### What's Blocked
 
@@ -91,7 +91,7 @@ The firewall script is located at: `~/.local/containers/copilot/scripts/configur
 If you need to access local network resources:
 
 ```bash
-ghcp --ghcp-no-firewall [command...]
+agent copilot --agent-no-firewall [command...]
 ```
 
 This disables the firewall and allows full network access including local networks.
@@ -107,30 +107,30 @@ The firewall uses nftables with these rules:
 
 For implementation details, see the firewall script or refer to the [podman networking docs](https://github.com/eriksjolund/podman-networking-docs#set-up-container-firewall).
 
-## Using ghcp## Using ghcp
+## Using agent copilot
 
-The `ghcp` command:
+The `agent copilot` command:
 - Auto-builds the container image on first use
 - Mounts your current directory to `/workspace` in the container
 - Passes your GitHub authentication via `GH_TOKEN` environment variable
 - Configures network isolation by default (blocks local network access)
-- Uses public DNS servers (8.8.8.8, 1.1.1.1)
+- Uses public DNS servers (8.8.8.8, 1.1.1.1, 9.9.9.9)
 - Forwards all arguments to the copilot command
 
 **Built-in Commands:**
-- `ghcp --ghcp-rebuild` - Rebuild container to update Copilot CLI to latest version
-- `ghcp --ghcp-no-sessions` - Run in ephemeral mode (no session persistence)
-- `ghcp --ghcp-no-firewall` - Disable network isolation for this session
-- `ghcp --ghcp-help` - Show ghcp help (for copilot help, use `ghcp --help`)
+- `agent copilot --agent-rebuild` - Rebuild container to update Copilot CLI to latest version
+- `agent copilot --agent-no-sessions` - Run in ephemeral mode (no session persistence)
+- `agent copilot --agent-no-firewall` - Disable network isolation for this session
+- `agent copilot --agent-help` - Show agent help (for copilot help, use `agent copilot --help`)
 
-All flags not starting with `--ghcp-` are passed through to copilot.
+All flags not starting with `--agent-` are passed through to copilot.
 
 ### AGENTS.md defaults
 
-If an `AGENTS.md` file with YAML front-matter is found in the current directory or a parent directory (walking upward until the git repo root or `/`), `ghcp` may apply defaults to the Copilot CLI invocation.
+If an `AGENTS.md` file with YAML front-matter is found in the current directory or a parent directory (walking upward until the git repo root or `/`), `agent copilot` may apply defaults to the Copilot CLI invocation.
 
 - Currently supported: `model: gpt-5.2` → adds `--model gpt-5.2`
-- Precedence: if you pass `--model ...` yourself, `ghcp` will not override it.
+- Precedence: if you pass `--model ...` yourself, `agent` will not override it.
 
 ## Installation
 
@@ -240,7 +240,7 @@ Additional security-sensitive tools are included as commented examples in the co
 
 2. Add or remove tool patterns as needed
 
-3. Changes take effect on the next `ghcp` invocation (no rebuild needed)
+3. Changes take effect on the next `agent copilot` invocation (no rebuild needed)
 
 ### Disabling Tool Restrictions
 
@@ -260,7 +260,7 @@ To temporarily disable all tool restrictions, you can:
 
 ### Recommended: Use Built-in Rebuild Command
 ```bash
-ghcp --ghcp-rebuild
+agent copilot --agent-rebuild
 ```
 
 This removes the old container image and rebuilds it with the latest Copilot CLI from npm.
@@ -270,8 +270,8 @@ This removes the old container image and rebuilds it with the latest Copilot CLI
 # Remove old image
 podman rmi copilot-sandbox
 
-# Next ghcp command will auto-rebuild
-ghcp --version
+# Next agent copilot command will auto-rebuild
+agent copilot --version
 ```
 
 ## Troubleshooting

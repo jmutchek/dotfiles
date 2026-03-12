@@ -1,8 +1,8 @@
 #!/bin/bash
-# Test script for ghcp network isolation
-# Run this from within a ghcp session to verify firewall is working
+# Test script for agent copilot network isolation
+# Run this from within an 'agent copilot' session to verify firewall is working
 
-echo "=== Testing ghcp Network Isolation ==="
+echo "=== Testing agent copilot Network Isolation ==="
 echo ""
 
 echo "Test 1: Public internet (should work)"
