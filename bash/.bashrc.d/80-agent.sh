@@ -13,6 +13,7 @@ Usage:
   agent <name> [arguments...]       Run the specified agent
   agent <name> --agent-rebuild      Rebuild container image (updates CLI)
   agent <name> --agent-update       Same as --agent-rebuild
+  agent --agent-rebuild-all         Rebuild all agent container images
   agent <name> --agent-no-sessions  Disable session persistence (ephemeral mode)
   agent <name> --agent-no-firewall  Disable network isolation (allow local network access)
   agent <name> --agent-help         Show this help message
@@ -34,6 +35,7 @@ Examples:
   agent claude --agent-rebuild          Update Claude Code container
   agent claude --agent-no-sessions      Run Claude without session persistence
   agent claude --agent-no-firewall      Run Claude with local network access
+  agent --agent-rebuild-all             Update all agent containers at once
 
 Authentication:
   claude   - Mount ~/.claude (credentials from 'claude auth login' on host)
@@ -167,6 +169,15 @@ agent() {
     if [[ $# -eq 0 || "$1" == "--agent-help" ]]; then
         _agent_help
         return 0
+    fi
+
+    # Rebuild all agent containers in sequence (no agent name required)
+    if [[ "$1" == "--agent-rebuild-all" ]]; then
+        local rc=0
+        for _name in claude codex copilot; do
+            _agent_rebuild "${_name}-sandbox" "$HOME/.local/containers/${_name}" || rc=$?
+        done
+        return $rc
     fi
 
     local agent_name="$1"

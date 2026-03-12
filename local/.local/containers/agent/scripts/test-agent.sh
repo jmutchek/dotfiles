@@ -186,6 +186,7 @@ test_help() {
     assert_contains "contains Usage section"           "$output" "Usage:"
     assert_contains "documents --agent-help"           "$output" "--agent-help"
     assert_contains "documents --agent-rebuild"        "$output" "--agent-rebuild"
+    assert_contains "documents --agent-rebuild-all"    "$output" "--agent-rebuild-all"
     assert_contains "documents --agent-no-sessions"    "$output" "--agent-no-sessions"
     assert_contains "documents --agent-no-firewall"    "$output" "--agent-no-firewall"
     assert_contains "documents AGENTS.md"              "$output" "AGENTS.md"
@@ -222,6 +223,41 @@ test_agent_dispatch() {
     # Unknown agent → error on stderr, non-zero exit
     out="$(agent unknown-agent 2>&1)"
     assert_contains "unknown agent prints error" "$out" "unknown agent"
+}
+
+# ---------------------------------------------------------------------------
+# agent --agent-rebuild-all  (mocks _agent_rebuild to record calls)
+# ---------------------------------------------------------------------------
+test_agent_rebuild_all() {
+    echo ""
+    echo "--- agent --agent-rebuild-all ---"
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    local rebuild_log="$tmpdir/rebuild.log"
+    trap 'rm -rf "$tmpdir"; unset -f _agent_rebuild' RETURN
+
+    # Mock _agent_rebuild to record what it was called with
+    _agent_rebuild() { echo "rebuild $1 $2" >> "$rebuild_log"; }
+
+    agent --agent-rebuild-all 2>/dev/null
+    local out
+    out="$(cat "$rebuild_log" 2>/dev/null)"
+
+    assert_contains "rebuild-all rebuilds claude"   "$out" "claude-sandbox"
+    assert_contains "rebuild-all rebuilds codex"    "$out" "codex-sandbox"
+    assert_contains "rebuild-all rebuilds copilot"  "$out" "copilot-sandbox"
+
+    # All three containers must be rebuilt — check exact count
+    local count
+    count="$(grep -c "rebuild" "$rebuild_log" 2>/dev/null || echo 0)"
+    assert_eq "rebuild-all calls _agent_rebuild exactly 3 times" "$count" "3"
+
+    # --agent-rebuild-all must not invoke podman run
+    podman() { echo "podman $*" >> "$rebuild_log"; }
+    agent --agent-rebuild-all 2>/dev/null
+    assert_not_contains "rebuild-all does not invoke podman run" \
+        "$(cat "$rebuild_log")" "podman run"
+    unset -f podman
 }
 
 # ---------------------------------------------------------------------------
@@ -463,6 +499,7 @@ test_setup_firewall_hook
 test_load_denied_tools
 test_help
 test_agent_dispatch
+test_agent_rebuild_all
 test_agent_claude
 test_agent_codex
 test_agent_copilot
