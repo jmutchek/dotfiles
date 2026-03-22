@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     wget \
     xz-utils \
+    python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install OpenAI Codex CLI via npm
