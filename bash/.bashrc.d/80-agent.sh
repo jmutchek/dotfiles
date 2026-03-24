@@ -262,11 +262,13 @@ agent() {
     fi
 
     podman_args+=(-v "$PWD:/workspace:Z")
+    podman_args+=(-e "HOST_CWD=$(basename "$PWD")")
 
     # Agent-specific: session persistence, authentication, and extra args
     local denied_tools_args=()
     case "$agent_name" in
         claude)
+            podman_args+=(-e "GH_TOKEN=$(gh auth token 2>/dev/null)")
             if [[ "$persist_sessions" == "true" ]]; then
                 podman_args+=(-v "$HOME/.claude:/root/.claude:z")
                 podman_args+=(-v "$HOME/.claude.json:/root/.claude.json:z")
@@ -281,6 +283,7 @@ agent() {
                 echo "Warning: OPENAI_API_KEY is not set. Codex will likely fail to authenticate." >&2
             fi
             podman_args+=(-e "OPENAI_API_KEY=${OPENAI_API_KEY:-}")
+            podman_args+=(-e "GH_TOKEN=$(gh auth token 2>/dev/null)")
             ;;
         copilot)
             [[ "$persist_sessions" == "true" ]] && podman_args+=(-v "$HOME/.copilot:/root/.copilot:z")

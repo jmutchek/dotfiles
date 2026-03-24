@@ -36,7 +36,7 @@ brew install stow
 1. Clone this repository:
    ```bash
    git clone <repository-url> ~/github/dotfiles
-   cd ~/github/dotfiles
+   cd ~/github/jmutchek/dotfiles
    ```
 
 2. Stow the packages you want:
@@ -100,7 +100,7 @@ stow -R bash  # Restow to pick up new files
 
 ```bash
 # 1. Clone the repo
-git clone <repository-url> ~/github/dotfiles
+git clone <repository-url> ~/github/jmutchek/dotfiles
 
 # 2. Install stow
 sudo dnf install stow  # or appropriate package manager
@@ -110,7 +110,7 @@ mkdir ~/dotfiles-backup
 cp ~/.bashrc ~/.gitconfig ~/dotfiles-backup/
 
 # 4. Deploy configurations
-cd ~/github/dotfiles
+cd ~/github/jmutchek/dotfiles
 stow bash git tmux dircolors config local
 
 # 5. Reload shell
