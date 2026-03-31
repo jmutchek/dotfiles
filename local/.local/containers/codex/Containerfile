@@ -33,6 +33,9 @@ RUN (type -p wget >/dev/null || (apt update && apt install wget -y)) \
 # Install OpenAI Codex CLI via npm
 RUN npm install -g @openai/codex
 
+# Install Chrome for Playwright
+RUN npx -y playwright install chrome --with-deps
+
 # Create workspace directory
 RUN mkdir -p /workspace
 
