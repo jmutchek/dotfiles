@@ -34,6 +34,7 @@
 # INCLUSIONS (WHAT YOU *DO* WANT TO SYNC)
 # ----------------------------------------------------------------------
 
+/00-meta/09-temp/transfer
 /10-self/12-journal/12.10-journal
 /50-hobbies
 
