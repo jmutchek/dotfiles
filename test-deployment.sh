@@ -4,7 +4,7 @@
 
 set -e
 
-DOTFILES_DIR="$HOME/github/dotfiles"
+DOTFILES_DIR="$HOME/github/jmutchek/dotfiles/main"
 
 echo "=== Dotfiles Deployment Test ==="
 echo ""

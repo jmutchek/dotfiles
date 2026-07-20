@@ -35,25 +35,33 @@ brew install stow
 
 1. Clone this repository:
    ```bash
-   git clone <repository-url> ~/github/dotfiles
-   cd ~/github/jmutchek/dotfiles
+   git clone https://github.com/jmutchek/dotfiles.git ~/github/jmutchek/dotfiles/main
+   cd ~/github/jmutchek/dotfiles/main
    ```
 
-2. Stow the packages you want:
+2. Stow the packages you want, **always passing `-t ~` explicitly**:
    ```bash
    # Install individual packages
-   stow bash
-   stow git
-   stow tmux
-   stow dircolors
-   stow config
-   stow local
-   
+   stow -t ~ bash
+   stow -t ~ git
+   stow -t ~ tmux
+   stow -t ~ dircolors
+   stow -t ~ config
+   stow -t ~ local
+
    # Or install everything at once
-   stow */
+   stow -t ~ */
    ```
 
-3. Stow creates symlinks in your home directory pointing to files in this repo. If you have existing files, you may need to remove or backup them first.
+   > **Important:** stow's default target is the *parent* of the current
+   > directory, not `$HOME`. Since this repo lives at
+   > `~/github/jmutchek/dotfiles/main`, running plain `stow <package>` from
+   > inside `main/` silently symlinks into `~/github/jmutchek/dotfiles/`
+   > instead of your actual home directory — it looks like it worked, but
+   > nothing lands in `$HOME`. Always use `-t ~` (or `-t $HOME`) to avoid
+   > this trap.
+
+3. Stow creates symlinks in your home directory pointing to files in this repo. If you have existing files, you may need to remove or back them up first — or use `stow -t ~ --adopt <package>` to pull the existing file into the repo and replace it with a symlink (review the resulting `git diff` before committing, since `--adopt` overwrites the repo copy with whatever's on disk).
 
 ## Usage
 
@@ -68,14 +76,14 @@ Example - adding a new vim config:
 ```bash
 mkdir -p vim
 cp ~/.vimrc vim/.vimrc
-stow vim
+stow -t ~ vim
 ```
 
 ### Removing configurations
 
 To unlink a package:
 ```bash
-stow -D bash  # Removes bash symlinks
+stow -t ~ -D bash  # Removes bash symlinks
 ```
 
 ### Updating configurations
@@ -86,7 +94,7 @@ Simply edit the files in this repo - since they're symlinked, changes take effec
 
 If you add new files to an already-stowed package:
 ```bash
-stow -R bash  # Restow to pick up new files
+stow -t ~ -R bash  # Restow to pick up new files
 ```
 
 ## Security Notes
