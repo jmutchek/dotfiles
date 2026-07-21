@@ -29,5 +29,3 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 eval "$(zoxide init bash)"
-# mmoist CLI environment variables
-[ -f "/home/jmutchek/.config/mmoist/cli/.env" ] && { set -a; source "/home/jmutchek/.config/mmoist/cli/.env"; set +a; }
