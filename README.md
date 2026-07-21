@@ -31,6 +31,21 @@ sudo apt install stow
 brew install stow
 ```
 
+### Optional: Starship prompt
+
+The `bash` package expects [Starship](https://starship.rs) for its prompt (config
+lives in `config/.config/starship.toml`). The shell init in
+`bash/.bashrc.d/90-prompt.sh` no-ops gracefully if Starship isn't installed, so
+this step is optional but recommended:
+
+```bash
+# Install to ~/.local/bin (already on PATH via bash/.bashrc, no sudo needed)
+curl -fsSL https://starship.rs/install.sh | sh -s -- --yes --bin-dir ~/.local/bin
+```
+
+The prompt uses Nerd Font glyphs for the git branch and prompt characters. If they
+render as boxes, install a [Nerd Font](https://www.nerdfonts.com/) in your terminal.
+
 ## Installation
 
 1. Clone this repository:

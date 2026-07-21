@@ -1,0 +1,36 @@
+# Starship prompt configuration
+# https://starship.rs/config/
+
+# Two-line prompt: info line, then a clean prompt character on its own line
+# so the cursor always sits at the left margin regardless of path/branch length.
+add_newline = true
+
+format = """
+$directory$git_branch$git_status$cmd_duration
+$character"""
+
+[directory]
+# Keep long paths short: show at most 3 trailing components,
+# and collapse everything above the repo root when inside a git repo.
+truncation_length = 3
+truncate_to_repo = true
+truncation_symbol = "…/"
+style = "bold cyan"
+
+[git_branch]
+symbol = " "
+style = "bold purple"
+
+[git_status]
+style = "bold yellow"
+
+[cmd_duration]
+# Only surface when a command took a noticeable amount of time.
+min_time = 2000
+format = "took [$duration]($style) "
+style = "dimmed white"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](bold green)"
