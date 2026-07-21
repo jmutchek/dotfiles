@@ -10,5 +10,13 @@ mdview() {
     pandoc "$md" -s -o "$tmp"
   fi
 
-  xdg-open "$tmp" >/dev/null 2>&1 &
+  if grep -qi microsoft /proc/version 2>/dev/null; then
+    if command -v wslview >/dev/null 2>&1; then
+      wslview "$tmp" >/dev/null 2>&1 &
+    else
+      cmd.exe /c start "" "$(wslpath -w "$tmp")" >/dev/null 2>&1 &
+    fi
+  else
+    xdg-open "$tmp" >/dev/null 2>&1 &
+  fi
 }

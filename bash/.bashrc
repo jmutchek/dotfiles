@@ -30,4 +30,4 @@ export NVM_DIR="$HOME/.nvm"
 
 eval "$(zoxide init bash)"
 # mmoist CLI environment variables
-[ -f "/home/jmutchek/.config/mmoist/cli/.env" ] && source "/home/jmutchek/.config/mmoist/cli/.env"
+[ -f "/home/jmutchek/.config/mmoist/cli/.env" ] && { set -a; source "/home/jmutchek/.config/mmoist/cli/.env"; set +a; }
