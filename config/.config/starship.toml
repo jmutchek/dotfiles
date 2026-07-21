@@ -6,8 +6,24 @@
 add_newline = true
 
 format = """
-$directory$git_branch$git_status$cmd_duration
+${custom.repo}$directory$git_branch$git_status$cmd_duration
 $character"""
+
+[custom.repo]
+# Repo name from the git remote, not the checkout dir — worktrees are
+# checked out into folders named after their branch (e.g. "main"),
+# which would otherwise be indistinguishable from git_branch below.
+command = '''
+url=$(git remote get-url origin 2>/dev/null)
+if [ -n "$url" ]; then
+  basename "$url" .git
+else
+  basename "$(git rev-parse --show-toplevel)"
+fi
+'''
+when = "git rev-parse --is-inside-work-tree > /dev/null 2>&1"
+style = "bold blue"
+format = "[$output]($style) "
 
 [directory]
 # Keep long paths short: show at most 3 trailing components,
