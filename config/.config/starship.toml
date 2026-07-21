@@ -18,7 +18,7 @@ truncation_symbol = "…/"
 style = "bold cyan"
 
 [git_branch]
-symbol = " "
+symbol = " "
 style = "bold purple"
 
 [git_status]
