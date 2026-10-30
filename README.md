@@ -120,8 +120,15 @@ stow --no-folding -t ~ -R config  # Restow to pick up new files
 ```
 
 Keep `--no-folding` when restowing so new directories are not replaced with
-whole-directory symlinks. This option does not automatically convert existing
-directory symlinks into real directories.
+whole-directory symlinks. To convert existing Stow-managed directory symlinks
+into real directories with individual file links, use `-R` with `--no-folding`:
+
+```bash
+stow --no-folding -t ~ -R config local
+```
+
+Move any generated runtime files out of the repo before restowing; Stow would
+otherwise link those files too, even if Git ignores them.
 
 ## Security Notes
 
