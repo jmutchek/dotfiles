@@ -54,19 +54,26 @@ render as boxes, install a [Nerd Font](https://www.nerdfonts.com/) in your termi
    cd ~/github/jmutchek/dotfiles/main
    ```
 
-2. Stow the packages you want, **always passing `-t ~` explicitly**:
+2. Stow the packages you want, **always passing `--no-folding -t ~` explicitly**:
    ```bash
    # Install individual packages
-   stow -t ~ bash
-   stow -t ~ git
-   stow -t ~ tmux
-   stow -t ~ dircolors
-   stow -t ~ config
-   stow -t ~ local
+   stow --no-folding -t ~ bash
+   stow --no-folding -t ~ git
+   stow --no-folding -t ~ tmux
+   stow --no-folding -t ~ dircolors
+   stow --no-folding -t ~ config
+   stow --no-folding -t ~ local
 
    # Or install everything at once
-   stow -t ~ */
+   stow --no-folding -t ~ */
    ```
+
+   `--no-folding` creates real directories in your home directory and symlinks
+   individual files rather than whole directories. For example,
+   `~/.config/herdr/config.toml` links into this repo, while Herdr's logs,
+   sockets, and session state stay in the local `~/.config/herdr/` directory.
+   Without this option, a whole-directory symlink can send those generated
+   files into the repo. Git ignore rules do not change Stow's behavior.
 
    > **Important:** stow's default target is the *parent* of the current
    > directory, not `$HOME`. Since this repo lives at
@@ -76,7 +83,7 @@ render as boxes, install a [Nerd Font](https://www.nerdfonts.com/) in your termi
    > nothing lands in `$HOME`. Always use `-t ~` (or `-t $HOME`) to avoid
    > this trap.
 
-3. Stow creates symlinks in your home directory pointing to files in this repo. If you have existing files, you may need to remove or back them up first — or use `stow -t ~ --adopt <package>` to pull the existing file into the repo and replace it with a symlink (review the resulting `git diff` before committing, since `--adopt` overwrites the repo copy with whatever's on disk).
+3. Stow creates symlinks in your home directory pointing to files in this repo. If you have existing files, you may need to remove or back them up first — or use `stow --no-folding -t ~ --adopt <package>` to pull the existing file into the repo and replace it with a symlink (review the resulting `git diff` before committing, since `--adopt` overwrites the repo copy with whatever's on disk).
 
 ## Usage
 
@@ -91,14 +98,14 @@ Example - adding a new vim config:
 ```bash
 mkdir -p vim
 cp ~/.vimrc vim/.vimrc
-stow -t ~ vim
+stow --no-folding -t ~ vim
 ```
 
 ### Removing configurations
 
 To unlink a package:
 ```bash
-stow -t ~ -D bash  # Removes bash symlinks
+stow --no-folding -t ~ -D bash  # Removes bash symlinks
 ```
 
 ### Updating configurations
@@ -109,8 +116,12 @@ Simply edit the files in this repo - since they're symlinked, changes take effec
 
 If you add new files to an already-stowed package:
 ```bash
-stow -t ~ -R bash  # Restow to pick up new files
+stow --no-folding -t ~ -R config  # Restow to pick up new files
 ```
+
+Keep `--no-folding` when restowing so new directories are not replaced with
+whole-directory symlinks. This option does not automatically convert existing
+directory symlinks into real directories.
 
 ## Security Notes
 
@@ -134,7 +145,7 @@ cp ~/.bashrc ~/.gitconfig ~/dotfiles-backup/
 
 # 4. Deploy configurations
 cd ~/github/jmutchek/dotfiles
-stow bash git tmux dircolors config local
+stow --no-folding -t ~ bash git tmux dircolors config local
 
 # 5. Reload shell
 exec bash
@@ -148,10 +159,10 @@ If stow reports conflicts:
 ```bash
 # Option 1: Backup and remove existing files
 mv ~/.bashrc ~/.bashrc.backup
-stow bash
+stow --no-folding -t ~ bash
 
 # Option 2: Use --adopt to take over existing files
-stow --adopt bash
+stow --no-folding -t ~ --adopt bash
 # This moves existing files into the repo - review with git diff!
 ```
 

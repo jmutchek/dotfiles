@@ -51,6 +51,10 @@
 .vscode/settings.json
 .config/gh/hosts.yml
 
+# Herdr runtime state
+/config/.config/herdr/*
+!/config/.config/herdr/config.toml
+
 # Container runtime data
 .local/containers/*/auth.json
 .local/containers/*/secrets/
